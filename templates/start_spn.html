@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Start SPN</title>
+</head>
+<body>
+    <a href="../">Home</a>
+    <a href="../start">Start</a>
+    <a href="../log">Logs</a>
+    <a href="../about">About</a>
+
+    <h1>Start SPN</h1>
+    <form method="POST">
+        <label for="url">url:</label>
+        <input type="text" id="url" name="url"><br><br>
+
+        <label for="auth">-a auth:</label>
+        <input type="text" id="auth" name="auth"><br><br>
+
+        <label for="curl_args">-c args:</label>
+        <input type="text" id="curl_args" name="curl_args"><br><br>
+
+        <label for="data">-d data:</label>
+        <input type="text" id="data" name="data"><br><br>
+
+        <label for="folder">-f folder:</label>
+        <input type="text" id="folder" name="folder"><br><br>
+
+        <label for="suffix">-i suffix:</label>
+        <input type="text" id="suffix" name="suffix"><br><br>
+
+        <label><input type="checkbox" name="no_errors"> -n (no_errors)</label><br><br>
+
+        <label for="outlinks_pattern">-o pattern:</label>
+        <input type="text" id="outlinks_pattern" name="outlinks_pattern"><br><br>
+
+        <label for="parallel_jobs">-p N:</label>
+        <input type="number" id="parallel_jobs" name="parallel_jobs"><br><br>
+
+        <label><input type="checkbox" name="discard_json"> -q (discard JSON)</label><br><br>
+
+        <label for="resume_folder">-r folder:</label>
+        <input type="text" id="resume_folder" name="resume_folder"><br><br>
+
+        <label><input type="checkbox" name="use_https"> -s (use HTTPS)</label><br><br>
+
+        <label for="update_wait">-t N:</label>
+        <input type="number" id="update_wait" name="update_wait"><br><br>
+
+        <label for="capture_wait">-w N:</label>
+        <input type="number" id="capture_wait" name="capture_wait"><br><br>
+
+        <label for="exclude_pattern">-x pattern:</label>
+        <input type="text" id="exclude_pattern" name="exclude_pattern"><br><br>
+
+        <button type="submit">Execute</button>
+    </form>
+
+    {% if command %}
+    <h2>command:</h2>
+    <pre>{{ command }}</pre>
+    {% endif %}
+
+    {% if output %}
+    <h2>output:</h2>
+    <pre>{{ output }}</pre>
+    {% endif %}
+</body>
+</html>

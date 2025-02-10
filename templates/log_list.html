@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logs</title>
+</head>
+<body>
+    <a href="../">Home</a>
+    <a href="../start">Start</a>
+    <a href="../log">Logs</a>
+    <a href="../about">About</a>
+    
+    <h1>Logs</h1>
+    <ul>
+        {% for filename in log_filenames %}
+        <li><a href="/log/{{ filename }}">{{ filename }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
