@@ -55,3 +55,6 @@ test_delay_extraction 'The capture will start in ~2 minutes because our service 
 test_delay_extraction 'The capture will start in ~1 second because our service is currently overloaded. You may close your browser window and the page will still be saved.' 0 0 1 1 true
 test_delay_extraction 'The capture will start in ~50 seconds because our service is currently overloaded. You may close your browser window and the page will still be saved.' 0 0 50 50 true
 test_delay_extraction 'The capture will start in ~4 hours, 30 minutes because our service is currently overloaded. You may close your browser window and the page will still be saved.' 4 30 0 16200 true
+
+# Run test by command:
+#     bash test-fix-grep-warning.sh
