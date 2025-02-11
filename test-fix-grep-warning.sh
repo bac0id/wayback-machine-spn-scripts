@@ -35,6 +35,13 @@ test_delay_extraction() {
             echo "Expected total seconds: $expected_total_seconds, got: $total_delay_seconds"
             echo "Expected delay: $expected_delay, got: $is_delay"
         fi
+    else
+        if [[ $is_delay == $expected_delay ]]; then
+            echo "Test passed for message: $message"
+        else
+            echo "Test failed for message: $message"
+            echo "Expected delay: $expected_delay, got: $is_delay"
+        fi
     fi
 }
 
