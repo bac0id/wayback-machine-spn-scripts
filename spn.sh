@@ -26,6 +26,7 @@ list_update_rate='3600'
 capture_job_rate='2.5'
 include_pattern=''
 exclude_pattern=''
+use_onion=''
 
 print_usage() {
 	echo "Usage: $(basename "$0") [options] file
@@ -66,10 +67,12 @@ Options:
                 starting another capture job (default: 2.5)
 
  -x pattern     save detected capture outlinks not matching regex (ERE) pattern
-                (if -o is also used, outlinks are filtered using both regexes)"
+                (if -o is also used, outlinks are filtered using both regexes)
+
+ -z             use .onion address for web.archive (requires Tor)"
 }
 
-while getopts 'a:c:d:f:i:no:p:qr:st:w:x:' flag; do
+while getopts 'a:c:d:f:i:no:p:qr:st:w:x:z' flag; do
 	case "${flag}" in
 		a)	auth="$OPTARG" ;;
 		c)	declare -a "curl_args=($OPTARG)" ;;
@@ -85,6 +88,7 @@ while getopts 'a:c:d:f:i:no:p:qr:st:w:x:' flag; do
 		t)	list_update_rate="$OPTARG" ;;
 		w)	capture_job_rate="$OPTARG" ;;
 		x)	outlinks='true'; exclude_pattern="$OPTARG" ;;
+		z)	use_onion='true' ;;
 		*)	print_usage
 			exit 1 ;;
 	esac
@@ -261,6 +265,12 @@ if [[ -n "$outlinks" ]]; then
 	echo "$exclude_pattern" > exclude_pattern.txt
 fi
 
+if [[ -n "$use_onion" ]]; then
+	archive_host="web.archivep75mbjunhxc6x4j5mwjmomyxb573v42baldlqu56ruil2oiad.onion"
+else
+	archive_host="web.archive.org"
+fi
+
 # Submit a URL to Save Page Now and check the result
 function capture(){
 	local tries="0"
@@ -276,7 +286,7 @@ function capture(){
 				break 2
 			fi
 			if [[ -n "$auth" ]]; then
-				request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://web.archive.org/save/")
+				request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://$archive_host/save/")
 				job_id=$(echo "$request" | grep -Eo '"job_id":"([^"\\]|\\["\\])*"' | head -1 | sed -Ee 's/"job_id":"(.*)"/\1/g')
 				if [[ -n "$job_id" ]]; then
 					break
@@ -284,7 +294,7 @@ function capture(){
 				echo "$(date -u '+%Y-%m-%d %H:%M:%S') [Request failed] $1"
 				message=$(echo "$request" | grep -Eo '"message":"([^"\\]|\\["\\])*"' | sed -Ee 's/"message":"(.*)"/\1/g')
 			else
-				request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" "https://web.archive.org/save/")
+				request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" "https://$archive_host/save/")
 				job_id=$(echo "$request" | grep -E 'spn\.watchJob\(' | sed -Ee 's/^.*spn\.watchJob\("([^"]*).*$/\1/g' | head -1)
 				if [[ -n "$job_id" ]]; then
 					break
@@ -332,7 +342,7 @@ function capture(){
 						if [[ -n "$auth" ]]; then
 							# If logged in, then check if the server-side limit for captures has been reached
 							while :; do
-								request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://web.archive.org/save/status/user")
+								request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://$archive_host/save/status/user")
 								available=$(echo "$request" | grep -Eo '"available":[0-9]*' | head -1)
 								if [[ "$available" != '"available":0' ]]; then
 									break
@@ -340,7 +350,7 @@ function capture(){
 									sleep 5
 								fi
 							done
-							request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://web.archive.org/save/")
+							request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://$archive_host/save/")
 							job_id=$(echo "$request" | grep -Eo '"job_id":"([^"\\]|\\["\\])*"' | head -1 | sed -Ee 's/"job_id":"(.*)"/\1/g')
 							if [[ -n "$job_id" ]]; then
 								rm lock$f.txt
@@ -349,7 +359,7 @@ function capture(){
 							echo "$(date -u '+%Y-%m-%d %H:%M:%S') [Request failed] $1"
 							message=$(echo "$request" | grep -Eo '"message":"([^"\\]|\\["\\])*"' | sed -Ee 's/"message":"(.*)"/\1/g')
 						else
-							request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" "https://web.archive.org/save/")
+							request=$(curl "${curl_args[@]}" -s -m 60 -X POST --data-urlencode "url=${1}" -d "${post_data}" "https://$archive_host/save/")
 							job_id=$(echo "$request" | grep -E 'spn\.watchJob\(' | sed -Ee 's/^.*spn\.watchJob\("([^"]*).*$/\1/g' | head -1)
 							if [[ -n "$job_id" ]]; then
 								rm lock$f.txt
@@ -428,7 +438,7 @@ function capture(){
 		local status_ext
 		while :; do
 			sleep "$(<status_rate$f.txt)"
-			request=$(curl "${curl_args[@]}" -s -m 60 "https://web.archive.org/save/status/$job_id")
+			request=$(curl "${curl_args[@]}" -s -m 60 "https://$archive_host/save/status/$job_id")
 			status=$(echo "$request" | grep -Eo '"status":"([^"\\]|\\["\\])*"' | head -1)
 			if [[ -z "$status" ]]; then
 				echo "$(date -u '+%Y-%m-%d %H:%M:%S') [Status request failed] $1"
@@ -437,7 +447,7 @@ function capture(){
 					sleep 20
 				fi
 				sleep "$(<status_rate$f.txt)"
-				request=$(curl "${curl_args[@]}" -s -m 60 "https://web.archive.org/save/status/$job_id")
+				request=$(curl "${curl_args[@]}" -s -m 60 "https://$archive_host/save/status/$job_id")
 				status=$(echo "$request" | grep -Eo '"status":"([^"\\]|\\["\\])*"' | head -1)
 				if [[ -z "$status" ]]; then
 					echo "$(date -u '+%Y-%m-%d %H:%M:%S') [Status request failed] $1"
@@ -638,7 +648,7 @@ if [[ -n "$parallel" ]]; then
 			# If logged in, then check if the server-side limit for captures has been reached
 			if [[ -n "$auth" ]] && (( children > 4 )); then
 				while :; do
-					request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://web.archive.org/save/status/user")
+					request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://$archive_host/save/status/user")
 					available=$(echo "$request" | grep -Eo '"available":[0-9]*' | head -1)
 					if [[ "$available" != '"available":0' ]]; then
 						break
@@ -684,7 +694,7 @@ if [[ -n "$parallel" ]]; then
 						# If logged in, then check if the server-side limit for captures has been reached
 						if [[ -n "$auth" ]] && (( children > 4 )); then
 							while :; do
-								request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://web.archive.org/save/status/user")
+								request=$(curl "${curl_args[@]}" -s -m 60 -H "Accept: application/json" -H "Authorization: LOW ${auth}" "https://$archive_host/save/status/user")
 								available=$(echo "$request" | grep -Eo '"available":[0-9]*' | head -1)
 								if [[ "$available" != '"available":0' ]]; then
 									break
